@@ -75,7 +75,11 @@ class KNearestNeighbor:
                 # not use a loop over dimension, nor use np.linalg.norm().          #
                 #####################################################################
                 # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-                dists[i, j] = ((X[i] - X[j])**2).sum()
+                dists[i, j] = ((X[i] - self.X_train[j])**2).sum()
+
+                # just because tests want distances instead of their squares, for some reason...
+                dists[i, j] = np.sqrt(dists[i, j])
+
                 # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return dists
 
@@ -90,7 +94,6 @@ class KNearestNeighbor:
         num_train = self.X_train.shape[0]
         dists = np.zeros((num_test, num_train))
         for i in range(num_test):
-            pass
             #######################################################################
             # TODO:                                                               #
             # Compute the l2 distance between the ith test point and all training #
@@ -98,7 +101,11 @@ class KNearestNeighbor:
             # Do not use np.linalg.norm().                                        #
             #######################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-            dists[i, :] = ((X[i] - X)**2).sum(axis=1)
+            dists[i, :] = ((X[i] - self.X_train)**2).sum(axis=1)
+
+            # just because tests want distances instead of their squares, for some reason...
+            dists[i, :] = np.sqrt(dists[i, :])
+
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return dists
 
@@ -126,9 +133,15 @@ class KNearestNeighbor:
         #       and two broadcast sums.                                         #
         #########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        g = X @ X.T
-        d = np.diag(g)
-        dists = (d - 2 * g.T).T + d
+
+        # https://stackoverflow.com/a/65020414/11143763
+        def squares(A):
+            return np.sum(A*A, axis=1, keepdims=True)
+        dists = squares(X) - 2 * (X @ (self.X_train.T)) + squares(self.X_train).T
+        
+        # just because tests want distances instead of their squares, for some reason...
+        dists = np.sqrt(dists)
+
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return dists
 
@@ -148,7 +161,6 @@ class KNearestNeighbor:
         num_test = dists.shape[0]
         y_pred = np.zeros(num_test)
         for i in range(num_test):
-            pass
             # A list of length k storing the labels of the k nearest neighbors to
             # the ith test point.
             #########################################################################
@@ -159,6 +171,8 @@ class KNearestNeighbor:
             # Hint: Look up the function numpy.argsort.                             #
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+            kNN_indices = np.argsort(dists[i])[:k]
+            kNN_labels = self.y_train[kNN_indices]
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
             #########################################################################
@@ -169,8 +183,8 @@ class KNearestNeighbor:
             # label.                                                                #
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-
+            labels, counts = np.unique(kNN_labels, return_counts=True)
+            y_pred[i] = min(zip(-counts, labels))[1]
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
         return y_pred
