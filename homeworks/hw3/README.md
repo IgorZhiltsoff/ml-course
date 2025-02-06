@@ -1,0 +1,3 @@
+* Part 1: Dealing with overfitting [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/girafe-ai/ml-course/blob/24f_mipt/homeworks/lab03_deep_learning/lab03_part1_overfitting.ipynb)
+
+* Part 2: Poetry generation [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/girafe-ai/ml-course/blob/24f_mipt/homeworks/lab03_deep_learning/lab03_part2_poetry.ipynb)
