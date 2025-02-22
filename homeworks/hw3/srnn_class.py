@@ -52,7 +52,9 @@ class SimplestRNN:
 
         # history
         self.loss_history = []
-        self.hid_history = [] # for visualizing activation
+            # for visualizing activation
+        self.hid_history = []
+        self.proba_history = []
     
     # FIT 
     def fit(self, human_written_text, 
@@ -181,7 +183,9 @@ class SimplestRNN:
         out_logproba = self.hid2out @ self.hid + self.out_logproba_bias # why not use input, too? (extra params for no good reason) 
         out_proba = self.softmax(out_logproba) 
 
+        # history for visualization
         self.hid_history.append(self.hid)
+        self.proba_history.append(out_proba)
 
         return out_proba, (in_proba, self.hid, out_logproba,)
     
@@ -190,11 +194,13 @@ class SimplestRNN:
         return np.argmax(out_proba)
 
     # GENERATE
+    # FIXME visualize param
     def generate_encoded(self, seed_phrase=None, max_length=200, temperature=1.0, visualize_activation=False):
 
         seed_phrase_encoded = self.encode(seed_phrase)
 
         self.reset_hid()
+        self.reset_history_for_visualization()
         seed_output = []
         for seed_token in seed_phrase_encoded:
             seed_output.append(self.predict_token(seed_token, temperature))
@@ -221,24 +227,48 @@ class SimplestRNN:
         return self.decode(output_encoded), self.decode(seed_output_encoded)
     
     # INSPECT
-    def visualize_activation(self, seed_phrase, use_output=True, max_length=200,):
+    def visualize_activation(self, seed_phrase, use_output=True, max_length=200,
+                             #visualize_proba=True,
+                             verbose=False
+                             ):
         output, seed_output = self.generate_with_seed_output(
             seed_phrase=seed_phrase,
             max_length=max_length,
             temperature=None # TODO choose appropriate value
         )
+        if verbose:
+            print('Generated')
+
         dir4images = self.make_dir4images(seed_phrase)
+
+
 
         text = output 
 
         for neuron in range(self.hid_dim):
-            self.image = self.VerySmartImage(text)
-            for t in range(len(text)):
-               self.image.draw_character(
-                   character=text[t],
-                   neuron_value=self.hid_history[t][neuron]
-               ) 
-            self.image.save(dir4images=dir4images, neuron_name=f'{neuron}.bmp')
+            if verbose:
+                print(f'neuron {neuron}')
+
+            self.visualize_single_neuron(text=text, values=[self.hid_history[t][neuron] for t in range(len(text))], 
+                                         name=neuron, dir4images=dir4images)
+
+        proba_of_drawn_character = [
+            self.proba_history[t][self.token_to_idx[text[t]]]
+            for t in range(len(text))
+        ]
+        self.visualize_single_neuron(text=text, values=proba_of_drawn_character,
+                name='proba', dir4images=dir4images)
+        if verbose:
+            print('Done')
+
+    def visualize_single_neuron(self, text, values, name, dir4images):
+        self.image = self.VerySmartImage(text)
+        for t in range(len(text)):
+            self.image.draw_character(
+                character=text[t],
+                neuron_value=values[t]
+            ) 
+        self.image.save(dir4images=dir4images, name=name)
 
 
     def make_dir4images(self, seed_phrase):
@@ -284,8 +314,8 @@ class SimplestRNN:
 
             self.update_position(character)
 
-        def save(self, dir4images, neuron_name,):
-            self.image.save(dir4images / f'{neuron_name}')
+        def save(self, dir4images, name,):
+            self.image.save(dir4images / f'{name}.bmp')
 
         def linear_colour_gradient(self, real_from_pm1):
             red_ratio = (real_from_pm1 + 1) / 2
@@ -325,8 +355,9 @@ class SimplestRNN:
     def reset_hid(self):
         self.hid *= 0
     
-    def reset_hid_history(self):
+    def reset_history_for_visualization(self):
         self.hid_history = []
+        self.proba_history = []
 
     def encode(self, human_written_text):
         return [self.token_to_idx[x] for x in human_written_text]
