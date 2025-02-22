@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 from IPython.display import clear_output
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 from pathlib import Path
 from copy import deepcopy
@@ -225,18 +225,21 @@ class SimplestRNN:
                    character=seed_phrase[t],
                    neuron_value=self.hid_history[t][neuron]
                ) 
-            image.save(dir4images=dir4images, neuron_name=neuron)
+            image.save(dir4images=dir4images, neuron_name=f'{neuron}.bmp')
 
 
     def make_dir4images(self, seed_phrase):
         dir4images = Path(
             f"gigabytes_of_neurons/{self.hid_dim}_lr_{self.learning_rate}_lc_{self.line_count}_ll_{self.line_length}_{seed_phrase}"
         )
-        dir4images.mkdir()
+        dir4images.mkdir(exist_ok=True)
 
         # dump params
         params_dict = deepcopy(self.__dict__)
         with open(dir4images / "params.json", "w") as params_file:
+            for i in range(3):
+                print('###' * 20, file=params_file)
+
             for item in params_dict:
                 if item == 'hid_history':
                     continue
@@ -261,7 +264,9 @@ class SimplestRNN:
  
         def draw_character(self, character, neuron_value,):
             self.drawer.text((self.x, self.y), self.character_to_draw(character),
-                              fill=self.linear_colour_gradient(neuron_value))
+                              fill=self.linear_colour_gradient(neuron_value), 
+                              font=self.font
+                            )
 
             self.update_position(character)
 
@@ -282,10 +287,11 @@ class SimplestRNN:
             return character.replace(' ', '_').replace('\n', '_\n')
         
         def create_image(self, seed_phrase):
-            self.init_x = 10
-            self.init_y = 10
-            self.delta_x = 10
-            self.delta_y = 10
+            self.font_size = 15
+            self.init_x = self.font_size + 1
+            self.init_y = self.font_size + 1
+            self.delta_x = self.font_size + 1
+            self.delta_y = self.font_size + 1
 
             lines = seed_phrase.split('\n')
             self.height = (len(lines) * self.delta_y * 3) // 2 + 2 * self.init_y
@@ -295,7 +301,7 @@ class SimplestRNN:
 
             self.image = Image.new('RGB', (self.width, self.height))
             self.drawer = ImageDraw.Draw(self.image)
-
+            self.font = ImageFont.truetype("UbuntuMono-Regular.ttf", 15, encoding='UTF-8')
 
     # AUX
     def reset_hid(self):
