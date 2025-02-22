@@ -293,12 +293,12 @@ class SimplestRNN:
         
         def update_position(self, character):
             self.x += self.delta_x
-            if character == '\n':
+            if self.x > self.width - 2 * self.font_size:
                 self.x = self.init_x
-                self.y += self.init_y
+                self.y += self.delta_y
 
         def character_to_draw(self, character):
-            return character.replace(' ', '_').replace('\n', '_\n')
+            return character.replace(' ', '_').replace('\n', '#')
         
         def create_image(self, text):
             self.font_size = 15 # 25 # TODO calculate optimal
@@ -308,10 +308,13 @@ class SimplestRNN:
             self.delta_y = self.font_size + 1
 
             lines = text.split('\n')
-            self.height = len(lines) * (self.font_size + self.delta_y) + 2 * self.init_y
+            real_height = len(lines) * (self.font_size + self.delta_y) + 2 * self.init_y
             longest_line = max(lines, key=len)
             its_len = len(longest_line)
-            self.width = its_len * (self.font_size + self.delta_x) + 2 * self.init_x
+            real_width = its_len * (self.font_size + self.delta_x) + 2 * self.init_x
+
+            area = real_height * real_width
+            self.height = self.width = int(np.sqrt(area)) + 1 # TODO what is wrong with bottom?
 
 
             self.image = Image.new('RGB', (self.width, self.height))
