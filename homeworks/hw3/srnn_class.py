@@ -1,8 +1,12 @@
 import string
 import os
+import sys
+
 from random import sample
 
 import numpy as np
+np.set_printoptions(threshold=sys.maxsize)
+
 import torch, torch.nn as nn
 import torch.nn.functional as F
 
@@ -241,8 +245,6 @@ class SimplestRNN:
 
         dir4images = self.make_dir4images(seed_phrase)
 
-
-
         text = output 
 
         for neuron in range(self.hid_dim):
@@ -252,10 +254,14 @@ class SimplestRNN:
             self.visualize_single_neuron(text=text, values=[self.hid_history[t][neuron] for t in range(len(text))], 
                                          name=neuron, dir4images=dir4images)
 
-        proba_of_drawn_character = [
+        proba_of_drawn_character = np.array([
             self.proba_history[t][self.token_to_idx[text[t]]]
             for t in range(len(text))
-        ]
+        ])
+        # make it in [-1, 1]
+        proba_of_drawn_character *= 2
+        proba_of_drawn_character -= 1
+
         self.visualize_single_neuron(text=text, values=proba_of_drawn_character,
                 name='proba', dir4images=dir4images)
         if verbose:
@@ -280,7 +286,7 @@ class SimplestRNN:
         dir4images.mkdir(exist_ok=True)
 
         # dump params
-        forbidden_keys = ['hid_history', 'image']
+        forbidden_keys = ['hid_history', 'proba_history', 'image']
         params_dict = deepcopy({key : self.__dict__[key] for key in self.__dict__ if key not in forbidden_keys})
         with open(dir4images / "params.txt", "w") as params_file:
             for i in range(3):
