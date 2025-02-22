@@ -232,7 +232,7 @@ class SimplestRNN:
         text = output 
 
         for neuron in range(self.hid_dim):
-            self.image = self.VerySmartImage(seed_phrase)
+            self.image = self.VerySmartImage(text)
             for t in range(len(text)):
                self.image.draw_character(
                    character=text[t],
@@ -264,9 +264,9 @@ class SimplestRNN:
 
     
     class VerySmartImage:
-        def __init__(self, seed_phrase,):
+        def __init__(self, text,):
             # initiate canvas
-            self.create_image(seed_phrase)
+            self.create_image(text)
 
             # current position
             self.x = self.init_x
@@ -329,7 +329,7 @@ class SimplestRNN:
         return [self.token_to_idx[x] for x in human_written_text]
 
     def decode(self, encoded_text):
-        return [self.idx_to_token[x] for x in encoded_text]
+        return ''.join([self.idx_to_token[x] for x in encoded_text])
 
     def make_chunks(self, text_encoded, line_count, line_length):
         start_index = np.random.randint(0, len(text_encoded) - line_count * line_length)
