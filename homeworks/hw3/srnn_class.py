@@ -209,40 +209,54 @@ class SimplestRNN:
         return output, seed_output
 
     def generate(self, seed_phrase=None, max_length=200, temperature=1.0):
+        return self.generate_with_seed_output(seed_phrase=seed_phrase,
+                                              max_length=max_length,
+                                              temperature=temperature,
+                                              )[0]
+    
+    def generate_with_seed_output(self, seed_phrase, max_length, temperature):
         output_encoded, seed_output_encoded = self.generate_encoded(seed_phrase=seed_phrase,
                                                                     max_length=max_length,
                                                                     temperature=temperature)
-        return self.decode(output_encoded)
+        return self.decode(output_encoded), self.decode(seed_output_encoded)
     
     # INSPECT
-    def visualize_activation(self, seed_phrase):
+    def visualize_activation(self, seed_phrase, use_output=True, max_length=200,):
+        output, seed_output = self.generate_with_seed_output(
+            seed_phrase=seed_phrase,
+            max_length=max_length,
+            temperature=None # TODO choose appropriate value
+        )
         dir4images = self.make_dir4images(seed_phrase)
 
+        text = output 
+
         for neuron in range(self.hid_dim):
-            image = self.VerySmartImage(seed_phrase)
-            for t in range(len(seed_phrase)):
-               image.draw_character(
-                   character=seed_phrase[t],
+            self.image = self.VerySmartImage(seed_phrase)
+            for t in range(len(text)):
+               self.image.draw_character(
+                   character=text[t],
                    neuron_value=self.hid_history[t][neuron]
                ) 
-            image.save(dir4images=dir4images, neuron_name=f'{neuron}.bmp')
+            self.image.save(dir4images=dir4images, neuron_name=f'{neuron}.bmp')
 
 
     def make_dir4images(self, seed_phrase):
         dir4images = Path(
-            f"gigabytes_of_neurons/{self.hid_dim}_lr_{self.learning_rate}_lc_{self.line_count}_ll_{self.line_length}_{seed_phrase}"
+            f"gigabytes_of_neurons/{self.hid_dim}_lr_{self.learning_rate}_lc_{self.line_count}_ll_{self.line_length}_{seed_phrase}".replace(
+                                  '\n', '___'                        
+            )
         )
         dir4images.mkdir(exist_ok=True)
 
         # dump params
-        params_dict = deepcopy(self.__dict__)
-        with open(dir4images / "params.json", "w") as params_file:
+        forbidden_keys = ['hid_history', 'image']
+        params_dict = deepcopy({key : self.__dict__[key] for key in self.__dict__ if key not in forbidden_keys})
+        with open(dir4images / "params.txt", "w") as params_file:
             for i in range(3):
                 print('###' * 20, file=params_file)
 
             for item in params_dict:
-                if item == 'hid_history':
-                    continue
                 print(item, file=params_file)
                 print(params_dict[item], file=params_file)
 
@@ -286,22 +300,23 @@ class SimplestRNN:
         def character_to_draw(self, character):
             return character.replace(' ', '_').replace('\n', '_\n')
         
-        def create_image(self, seed_phrase):
-            self.font_size = 15
+        def create_image(self, text):
+            self.font_size = 15 # 25 # TODO calculate optimal
             self.init_x = self.font_size + 1
             self.init_y = self.font_size + 1
             self.delta_x = self.font_size + 1
             self.delta_y = self.font_size + 1
 
-            lines = seed_phrase.split('\n')
-            self.height = (len(lines) * self.delta_y * 3) // 2 + 2 * self.init_y
+            lines = text.split('\n')
+            self.height = len(lines) * (self.font_size + self.delta_y) + 2 * self.init_y
             longest_line = max(lines, key=len)
             its_len = len(longest_line)
-            self.width = (its_len * self.delta_x * 3) // 2 + 2 * self.init_x
+            self.width = its_len * (self.font_size + self.delta_x) + 2 * self.init_x
+
 
             self.image = Image.new('RGB', (self.width, self.height))
             self.drawer = ImageDraw.Draw(self.image)
-            self.font = ImageFont.truetype("UbuntuMono-Regular.ttf", 15, encoding='UTF-8')
+            self.font = ImageFont.truetype("UbuntuMono-Regular.ttf", self.font_size, encoding='UTF-8')
 
     # AUX
     def reset_hid(self):
