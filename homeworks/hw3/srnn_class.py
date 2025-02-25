@@ -175,13 +175,14 @@ class SimplestRNN:
                 dloss_d_hid_at_t_plus_1 = self.hid2hid.T @ dloss_d_preactivated_hid_at_t
 
             # update params
+            grad_length = self.grad_length(param_changes)
             for param, param_delta in param_changes:
                 if clip:
-                    param_delta = np.clip(param_delta, -clip, clip) 
+                    param_delta /= grad_length # = np.clip(param_delta, -clip, clip) 
                 param += -learning_rate * param_delta
 
             self.loss_history.append(loss)
-            self.grad_length_history.append(self.grad_length(param_changes))
+            self.grad_length_history.append(grad_length)
             if it % 100 == 0:
                 print(f'Loss on iteration {iterations_ellapsed} is {loss}')
                 print(f'Length of gradient is {self.grad_length_history[-1]}')
@@ -213,7 +214,8 @@ class SimplestRNN:
     
     def predict_token(self, in_token, temperature):
         out_proba, _ = self.predict_proba(in_token)
-        return np.argmax(out_proba)
+
+        return np.random.choice(range(len(out_proba)), p=out_proba.ravel())
 
     # GENERATE
     # FIXME visualize param
@@ -234,8 +236,6 @@ class SimplestRNN:
         for i in range(max_length):
             output.append(self.predict_token(output[-1], temperature))
 
-        #print(f'hi{len(output)}')
-        
         return output, seed_output
 
     def generate(self, seed_phrase=None, max_length=200, temperature=1.0):
@@ -302,7 +302,7 @@ class SimplestRNN:
 
     def make_dir4images(self, seed_phrase):
         dir4images = Path(
-            f"gigabytes_of_neurons/{self.hid_dim}_lr_{self.learning_rate}_lc_{self.line_count}_ll_{self.line_length}_it_{self.iterations}_{seed_phrase}".replace(
+            f"gigabytes_of_neurons/{self.hid_dim}_lr_{self.learning_rate}_lc_{self.line_count}_ll_{self.line_length}_it_{self.iterations}_clip_{self.clip}_{seed_phrase}".replace(
                                   '\n', '___'                        
             )
         )
